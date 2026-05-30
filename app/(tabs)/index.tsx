@@ -1,98 +1,493 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Ionicons,
+} from "@expo/vector-icons";
+
+import { router } from "expo-router";
+
+import {
+  getDashboardStats,
+} from "../../src/services/dashboard.service";
+
+import {
+  getProfile,
+} from "../../src/services/profile.service";
+
+export default function DashboardScreen() {
+
+  const [stats, setStats] =
+    useState<any>(null);
+
+  const [user, setUser] =
+    useState<any>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const fetchDashboard =
+    async () => {
+
+      try {
+
+        const dashboardResult =
+          await getDashboardStats();
+
+        const profileResult =
+          await getProfile();
+
+        setStats(
+          dashboardResult.data
+        );
+
+        setUser(profileResult.data);
+
+      } catch (error) {
+
+        console.log(error);
+
+        alert(
+          "Gagal mengambil dashboard"
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator
+          size="large"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+      </View>
+    );
+  }
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+
+    <SafeAreaView style={styles.container}>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* HERO */}
+
+        <View style={styles.hero}>
+
+          <View style={styles.headerRow}>
+
+            <View>
+
+              <Text style={styles.welcome}>
+                Selamat Datang,
+              </Text>
+
+              <Text style={styles.username}>
+                {user?.fullname} 👋
+              </Text>
+
+            </View>
+
+            <TouchableOpacity
+              style={styles.notification}
+            >
+
+              <Ionicons
+                name="notifications"
+                size={22}
+                color="#fff"
+              />
+
+            </TouchableOpacity>
+
+          </View>
+
+          {/* LOCATION */}
+
+          <View style={styles.locationRow}>
+
+            <Ionicons
+              name="location"
+              size={14}
+              color="#BFDBFE"
+            />
+
+            <Text style={styles.locationText}>
+              Tanjungpinang, Indonesia
+            </Text>
+
+          </View>
+
+          {/* SEARCH */}
+
+          <View style={styles.searchBar}>
+
+            <Ionicons
+              name="search"
+              size={18}
+              color="rgba(255,255,255,0.7)"
+            />
+
+            <TextInput
+              placeholder="Cari kendaraan..."
+              placeholderTextColor="rgba(255,255,255,0.7)"
+              style={styles.searchInput}
+            />
+
+          </View>
+
+        </View>
+
+        {/* STATS */}
+
+        <View style={styles.statsContainer}>
+
+          {/* USERS */}
+
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  "#EFF6FF",
+              },
+            ]}
+          >
+
+            <View
+              style={[
+                styles.statIcon,
+                {
+                  backgroundColor:
+                    "#DBEAFE",
+                },
+              ]}
+            >
+
+              <Ionicons
+                name="people"
+                size={18}
+                color="#2563EB"
+              />
+
+            </View>
+
+            <Text style={styles.statValue}>
+              {stats?.totalUsers}
+            </Text>
+
+            <Text style={styles.statLabel}>
+              Users
+            </Text>
+
+          </View>
+
+          {/* VEHICLES */}
+
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  "#F0FDF4",
+              },
+            ]}
+          >
+
+            <View
+              style={[
+                styles.statIcon,
+                {
+                  backgroundColor:
+                    "#DCFCE7",
+                },
+              ]}
+            >
+
+              <Ionicons
+                name="car-sport"
+                size={18}
+                color="#22C55E"
+              />
+
+            </View>
+
+            <Text style={styles.statValue}>
+              {stats?.totalVehicles}
+            </Text>
+
+            <Text style={styles.statLabel}>
+              Vehicles
+            </Text>
+
+          </View>
+
+          {/* RENTALS */}
+
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  "#FEFCE8",
+              },
+            ]}
+          >
+
+            <View
+              style={[
+                styles.statIcon,
+                {
+                  backgroundColor:
+                    "#FEF3C7",
+                },
+              ]}
+            >
+
+              <Ionicons
+                name="document-text"
+                size={18}
+                color="#F59E0B"
+              />
+
+            </View>
+
+            <Text style={styles.statValue}>
+              {stats?.totalRentals}
+            </Text>
+
+            <Text style={styles.statLabel}>
+              Rentals
+            </Text>
+
+          </View>
+
+        </View>
+
+        {/* PROMO */}
+
+        <View style={styles.promoCard}>
+
+          <Text style={styles.promoBadge}>
+            PROMO
+          </Text>
+
+          <Text style={styles.promoTitle}>
+            Diskon 30% Weekend
+          </Text>
+
+          <Text style={styles.promoText}>
+            Nikmati perjalanan lebih hemat
+            bersama RideNow
+          </Text>
+
+        </View>
+
+        {/* BUTTON */}
+
+        <TouchableOpacity
+          style={styles.vehicleButton}
+          onPress={() =>
+            router.push(
+              "/vehicles" as any
+            )
+          }
+        >
+
+          <Text style={styles.vehicleButtonText}>
+            Lihat Kendaraan
+          </Text>
+
+        </TouchableOpacity>
+
+      </ScrollView>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  hero: {
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
+
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  welcome: {
+    color: "#BFDBFE",
+    fontSize: 13,
+  },
+
+  username: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "bold",
+    marginTop: 4,
+  },
+
+  notification: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    backgroundColor:
+      "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 18,
+  },
+
+  locationText: {
+    color: "#BFDBFE",
+    marginLeft: 6,
+    fontSize: 13,
+  },
+
+  searchBar: {
+    height: 54,
+    borderRadius: 18,
+    backgroundColor:
+      "rgba(255,255,255,0.15)",
+    marginTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 18,
+  },
+
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    color: "#fff",
+  },
+
+  statsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
+
+  statCard: {
+    width: "48%",
+    borderRadius: 22,
+    paddingVertical: 20,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  statIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  statValue: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+
+  statLabel: {
+    marginTop: 4,
+    color: "#6B7280",
+    fontSize: 13,
+  },
+
+  promoCard: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 28,
+    padding: 24,
+    backgroundColor: "#4F46E5",
+  },
+
+  promoBadge: {
+    color: "#FDE68A",
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  promoTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+
+  promoText: {
+    color: "#E0E7FF",
+    marginTop: 10,
+    lineHeight: 22,
+  },
+
+  vehicleButton: {
+    backgroundColor: "#2563EB",
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 40,
+    padding: 18,
+    borderRadius: 18,
+    alignItems: "center",
+  },
+
+  vehicleButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
 });
