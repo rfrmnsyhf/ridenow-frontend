@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Image,
 } from "react-native";
 
 import {
@@ -18,6 +19,13 @@ import {
 } from "expo-router";
 
 import {
+  Ionicons,
+} from "@expo/vector-icons";
+
+import * as ImagePicker
+  from "expo-image-picker";
+
+import {
   getVehicleById,
   updateVehicle,
 } from "../../../../src/services/vehicle.service";
@@ -28,25 +36,22 @@ EditVehicleScreen() {
   const { id } =
     useLocalSearchParams();
 
-  const [name,
-    setName] =
+  const [name, setName] =
+    useState("");
+
+  const [brand, setBrand] =
+    useState("");
+
+  const [plateNumber,
+    setPlateNumber] =
       useState("");
 
-  const [brand,
-    setBrand] =
+  const [pricePerDay,
+    setPricePerDay] =
       useState("");
 
-  const [price,
-    setPrice] =
-      useState("");
-
-  const [image,
-    setImage] =
-      useState("");
-
-  const [status,
-    setStatus] =
-      useState("");
+  const [image, setImage] =
+    useState("");
 
   const fetchVehicle =
     async () => {
@@ -61,30 +66,27 @@ EditVehicleScreen() {
         const vehicle =
           result.data;
 
-        setName(
-          vehicle.name
+        setName(vehicle.name);
+
+        setBrand(vehicle.brand);
+
+        setPlateNumber(
+          vehicle.plateNumber
         );
 
-        setBrand(
-          vehicle.brand
-        );
-
-        setPrice(
-          String(vehicle.price)
+        setPricePerDay(
+          String(
+            vehicle.pricePerDay
+          )
         );
 
         setImage(
           vehicle.image || ""
         );
 
-        setStatus(
-          vehicle.status
-        );
-
       } catch (error) {
 
         console.log(error);
-
       }
     };
 
@@ -94,10 +96,74 @@ EditVehicleScreen() {
 
   }, []);
 
+  const pickImage =
+    async () => {
+
+      try {
+
+        const permission =
+
+          await ImagePicker
+            .requestMediaLibraryPermissionsAsync();
+
+        if (
+          permission.status !==
+          "granted"
+        ) {
+
+          alert(
+            "Gallery permission required"
+          );
+
+          return;
+        }
+
+        const result =
+
+          await ImagePicker
+            .launchImageLibraryAsync({
+
+              mediaTypes:
+                ["images"],
+
+              allowsEditing: true,
+
+              aspect: [4, 3],
+
+              quality: 1,
+            });
+
+        if (!result.canceled) {
+
+          setImage(
+            result.assets[0].uri
+          );
+        }
+
+      } catch (error) {
+
+        console.log(error);
+      }
+    };
+
   const handleUpdate =
     async () => {
 
       try {
+
+        if (
+          !name ||
+          !brand ||
+          !plateNumber ||
+          !pricePerDay
+        ) {
+
+          alert(
+            "Please fill all required fields"
+          );
+
+          return;
+        }
 
         await updateVehicle(
 
@@ -106,34 +172,34 @@ EditVehicleScreen() {
           {
 
             name,
-
             brand,
+            plateNumber,
 
-            price:
-              Number(price),
+            pricePerDay:
+              Number(pricePerDay),
 
             image,
-
-            status,
-
           }
-
         );
 
         alert(
-          "Kendaraan berhasil diupdate"
+          "Vehicle updated successfully"
         );
 
         router.back();
 
-      } catch (error) {
+      } catch (error: any) {
 
-        console.log(error);
-
-        alert(
-          "Gagal update kendaraan"
+        console.log(
+          "UPDATE ERROR:",
+          error?.response?.data ||
+          error
         );
 
+        alert(
+          error?.response?.data?.message ||
+          "Failed to update vehicle"
+        );
       }
     };
 
@@ -141,55 +207,161 @@ EditVehicleScreen() {
 
     <ScrollView
       style={styles.container}
+      showsVerticalScrollIndicator={false}
     >
 
       <Text style={styles.title}>
-        Edit Kendaraan
+        Edit Vehicle
       </Text>
 
-      <TextInput
-        placeholder="Nama Kendaraan"
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TextInput
-        placeholder="Brand"
-        style={styles.input}
-        value={brand}
-        onChangeText={setBrand}
-      />
-
-      <TextInput
-        placeholder="Harga"
-        style={styles.input}
-        keyboardType="numeric"
-        value={price}
-        onChangeText={setPrice}
-      />
-
-      <TextInput
-        placeholder="URL Gambar"
-        style={styles.input}
-        value={image}
-        onChangeText={setImage}
-      />
-
-      <TextInput
-        placeholder="Status"
-        style={styles.input}
-        value={status}
-        onChangeText={setStatus}
-      />
+      <Text style={styles.subtitle}>
+        Update fleet information
+      </Text>
 
       <TouchableOpacity
-        style={styles.button}
+        style={styles.uploadBox}
+        onPress={pickImage}
+        activeOpacity={0.8}
+      >
+
+        {image?.trim() ? (
+
+          <Image
+            source={{
+              uri: image
+            }}
+            style={styles.previewImage}
+          />
+
+        ) : (
+
+          <>
+
+            <View style={styles.cameraCircle}>
+
+              <Ionicons
+                name="camera"
+                size={22}
+                color="#2563EB"
+              />
+
+            </View>
+
+            <Text style={styles.uploadTitle}>
+              Vehicle Preview
+            </Text>
+
+            <Text style={styles.uploadSub}>
+              Tap to change image
+            </Text>
+
+          </>
+        )}
+
+      </TouchableOpacity>
+
+      <View style={styles.form}>
+
+        <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Vehicle Name
+          </Text>
+
+          <TextInput
+            placeholder="e.g. Fortuner"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+          />
+
+        </View>
+
+        <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Brand
+          </Text>
+
+          <TextInput
+            placeholder="e.g. Toyota"
+            style={styles.input}
+            value={brand}
+            onChangeText={setBrand}
+          />
+
+        </View>
+
+        <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Plate Number
+          </Text>
+
+          <TextInput
+            placeholder="e.g. BP1234XYZ"
+            style={styles.input}
+            value={plateNumber}
+            onChangeText={setPlateNumber}
+            autoCapitalize="characters"
+          />
+
+        </View>
+
+        <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Price / Day
+          </Text>
+
+          <TextInput
+            placeholder="500000"
+            style={styles.input}
+            keyboardType="numeric"
+            value={pricePerDay}
+            onChangeText={setPricePerDay}
+          />
+
+        </View>
+
+        <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Image URL
+          </Text>
+
+          <TextInput
+            placeholder="https://..."
+            style={styles.input}
+            value={image}
+            onChangeText={setImage}
+            autoCapitalize="none"
+          />
+
+        </View>
+
+      </View>
+
+      <TouchableOpacity
+        style={styles.saveButton}
         onPress={handleUpdate}
       >
 
-        <Text style={styles.buttonText}>
-          Update Kendaraan
+        <Text style={styles.saveText}>
+          Update Vehicle
+        </Text>
+
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.cancelButton}
+        onPress={() =>
+          router.back()
+        }
+      >
+
+        <Text style={styles.cancelText}>
+          Cancel
         </Text>
 
       </TouchableOpacity>
@@ -203,37 +375,134 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
 
   title: {
     fontSize: 30,
     fontWeight: "bold",
-    marginBottom: 24,
     color: "#111827",
+  },
+
+  subtitle: {
+    color: "#64748B",
+    marginTop: 6,
+    marginBottom: 24,
+  },
+
+  uploadBox: {
+    height: 180,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#CBD5E1",
+    backgroundColor: "#fff",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    overflow: "hidden",
+  },
+
+  previewImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  cameraCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+    backgroundColor: "#DBEAFE",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  uploadTitle: {
+    marginTop: 14,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#334155",
+  },
+
+  uploadSub: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+
+  form: {
+    marginTop: 26,
+  },
+
+  field: {
+    marginBottom: 18,
+  },
+
+  label: {
+    fontSize: 13,
+    color: "#64748B",
+    marginBottom: 8,
+    marginLeft: 4,
   },
 
   input: {
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 16,
+    height: 54,
+    fontSize: 14,
+    color: "#111827",
   },
 
-  button: {
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  halfField: {
+    width: "48%",
+  },
+
+  saveButton: {
     backgroundColor: "#2563EB",
-    padding: 18,
-    borderRadius: 14,
-    marginTop: 8,
+    height: 56,
+    borderRadius: 20,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginTop: 12,
   },
 
-  buttonText: {
+  saveText: {
     color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  cancelButton: {
+    backgroundColor: "#fff",
+    height: 56,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginTop: 14,
+    marginBottom: 40,
+  },
+
+  cancelText: {
+    color: "#475569",
+    fontSize: 15,
+    fontWeight: "600",
   },
 
 });

@@ -70,12 +70,27 @@ export default function LoginScreen() {
         result.data.token
       );
 
+      const user =
+        result.data.user;
+
       await AsyncStorage.setItem(
         "user",
-        JSON.stringify(result.data.user)
+        JSON.stringify(user)
       );
 
-      router.replace("/(tabs)" as any);
+      if (user.role === "admin") {
+
+        router.replace(
+          "/admin/(tabs)" as any
+        );
+
+      } else {
+
+        router.replace(
+          "/(tabs)" as any
+        );
+
+      }
 
     } catch (error: any) {
 

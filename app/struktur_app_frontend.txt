@@ -1,0 +1,45 @@
+Folder PATH listing for volume OS
+Volume serial number is 0000003A 18CF:0F42
+C:.
+¦   index.tsx
+¦   register.tsx
+¦   struktur_app_frontend.txt
+¦   _layout.tsx
+¦   
++---(tabs)
+¦       history.tsx
+¦       index.tsx
+¦       profile.tsx
+¦       vehicles.tsx
+¦       _layout.tsx
+¦       
++---admin
+¦   +---(tabs)
+¦   ¦       index.tsx
+¦   ¦       profile.tsx
+¦   ¦       rentals.tsx
+¦   ¦       users.tsx
+¦   ¦       vehicles.tsx
+¦   ¦       _layout.tsx
+¦   ¦       
+¦   +---vehicles
+¦       ¦   add.tsx
+¦       ¦   
+¦       +---edit
+¦               [id].tsx
+¦               
++---booking
+¦       index.tsx
+¦       
++---payment
+¦       index.tsx
+¦       
++---profile
+¦       edit.tsx
+¦       
++---rentals
+¦       [id].tsx
+¦       
++---vehicles
+        [id].tsx
+        
