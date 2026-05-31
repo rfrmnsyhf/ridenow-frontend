@@ -69,40 +69,40 @@ export default function ProfileScreen() {
   }, []);
 
   const handleLogout =
-    async () => {
+    () => {
 
       Alert.alert(
+
         "Logout",
-        "Yakin ingin keluar?",
+
+        "Are you sure want to logout?",
+
         [
+
           {
-            text: "Batal",
+            text: "Cancel",
             style: "cancel",
           },
+
           {
+
             text: "Logout",
 
-            onPress: async () => {
+            style: "destructive",
 
-              try {
+            onPress:
+              async () => {
 
-                await AsyncStorage.clear();
+                await AsyncStorage.multiRemove([
+                  "token",
+                  "user",
+                ]);
 
                 router.dismissAll();
 
-                setTimeout(() => {
+                router.replace("/");
 
-                  router.replace("/");
-
-                }, 100);
-
-              } catch (error) {
-
-                console.log(error);
-
-              }
-
-            },
+              },
           },
         ]
       );

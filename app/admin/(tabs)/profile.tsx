@@ -309,6 +309,19 @@ AdminProfileScreen() {
               <TouchableOpacity
                 key={item.label}
 
+                onPress={() => {
+
+                  if (
+                    item.label ===
+                    "Billing"
+                  ) {
+
+                    router.push(
+                      "/admin/payments" as any
+                    );
+                  }
+                }}
+
                 style={[
 
                   styles.menuItem,

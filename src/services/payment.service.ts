@@ -94,3 +94,25 @@ export const updatePayment =
 
     return response.data;
 };
+
+export const getPaymentStats =
+  async () => {
+
+    const token =
+      await getToken();
+
+    const response =
+      await api.get(
+
+        "/rentals",
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+    return response.data;
+};

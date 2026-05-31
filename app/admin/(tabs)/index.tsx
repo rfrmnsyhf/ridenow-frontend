@@ -1,13 +1,10 @@
 import {
-  View,
-  Text,
   FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
-  Image,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
@@ -19,47 +16,129 @@ import {
   router,
 } from "expo-router";
 
+import AsyncStorage
+from "@react-native-async-storage/async-storage";
+
 import {
   Ionicons,
 } from "@expo/vector-icons";
 
 import {
   getVehicles,
-  deleteVehicle,
 } from "../../../src/services/vehicle.service";
 
-const filters = [
-  "All",
-  "available",
-  "rented",
-  "maintenance",
-];
+import {
+  getRentals,
+} from "../../../src/services/rental.service";
+
+import {
+  getUsers,
+} from "../../../src/services/user.service";
 
 export default function
-VehiclesScreen() {
+AdminDashboardScreen() {
 
-  const [vehicles,
-    setVehicles] =
+  const [user, setUser] =
+    useState<any>(null);
+
+  const [stats, setStats] =
+    useState({
+
+      vehicles: 0,
+      rentals: 0,
+      users: 0,
+      activeRentals: 0,
+      revenue: 0,
+
+    });
+
+  const [recentRentals,
+    setRecentRentals] =
       useState<any[]>([]);
 
-  const [search,
-    setSearch] =
-      useState("");
-
-  const [activeFilter,
-    setActiveFilter] =
-      useState("All");
-
-  const fetchVehicles =
+  const fetchDashboard =
     async () => {
 
       try {
 
-        const result =
-          await getVehicles();
+        const storedUser =
+          await AsyncStorage.getItem(
+            "user"
+          );
 
-        setVehicles(
-          result.data
+        if (storedUser) {
+
+          setUser(
+            JSON.parse(
+              storedUser
+            )
+          );
+        }
+
+        const [
+
+          vehiclesResult,
+          rentalsResult,
+          usersResult,
+
+        ] = await Promise.all([
+
+          getVehicles(),
+          getRentals(),
+          getUsers(),
+
+        ]);
+
+        const vehicles =
+          vehiclesResult.data;
+
+        const rentals =
+          rentalsResult.data;
+
+        const users =
+          usersResult.data;
+
+        const activeRentals =
+          rentals.filter(
+            (item: any) =>
+              item.status !==
+              "completed"
+          );
+
+        const revenue =
+          rentals.reduce(
+
+            (
+              acc: number,
+              item: any
+            ) =>
+
+              acc +
+              item.totalPrice,
+
+            0
+          );
+
+        setStats({
+
+          vehicles:
+            vehicles.length,
+
+          rentals:
+            rentals.length,
+
+          users:
+            users.length,
+
+          activeRentals:
+            activeRentals.length,
+
+          revenue,
+
+        });
+
+        setRecentRentals(
+          rentals.slice(0, 3)
         );
 
       } catch (error) {
@@ -71,296 +150,469 @@ VehiclesScreen() {
 
   useEffect(() => {
 
-    fetchVehicles();
+    fetchDashboard();
 
   }, []);
 
-  const handleDelete =
-    (id: number) => {
+  const dashboardStats = [
 
-      Alert.alert(
-        "Hapus Kendaraan",
-        "Yakin ingin menghapus kendaraan?",
-        [
+    {
 
-          {
-            text: "Batal",
-            style: "cancel",
-          },
+      label:
+        "Total Vehicles",
 
-          {
-            text: "Hapus",
+      value:
+        stats.vehicles,
 
-            style: "destructive",
+      icon: "car-sport",
 
-            onPress:
-              async () => {
+      color:
+        "#2563EB",
 
-                try {
+      bg:
+        "#DBEAFE",
+    },
 
-                  await deleteVehicle(id);
+    {
 
-                  fetchVehicles();
+      label:
+        "Total Rentals",
 
-                } catch (error) {
+      value:
+        stats.rentals,
 
-                  console.log(error);
+      icon:
+        "clipboard",
 
-                }
-              },
-          },
-        ]
-      );
-    };
+      color:
+        "#7C3AED",
 
-  const filteredVehicles =
-    vehicles.filter((item) => {
+      bg:
+        "#EDE9FE",
+    },
 
-      const matchSearch =
+    {
 
-        item.name
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          ) ||
+      label:
+        "Total Users",
 
-        item.brand
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          );
+      value:
+        stats.users,
 
-      const matchFilter =
+      icon:
+        "people",
 
-        activeFilter === "All" ||
+      color:
+        "#059669",
 
-        item.status ===
-        activeFilter;
+      bg:
+        "#D1FAE5",
+    },
 
-      return (
-        matchSearch &&
-        matchFilter
-      );
-    });
+    {
 
-  const renderStatusColor =
-    (status: string) => {
+      label:
+        "Active Rentals",
 
-      switch (status) {
+      value:
+        stats.activeRentals,
 
-        case "available":
-          return "#16A34A";
+      icon:
+        "pulse",
 
-        case "rented":
-          return "#DC2626";
+      color:
+        "#D97706",
 
-        default:
-          return "#F59E0B";
-      }
-    };
+      bg:
+        "#FEF3C7",
+    },
+  ];
+
+  const quickActions = [
+
+    {
+
+      label:
+        "Add Vehicle",
+
+      icon: "add",
+
+      color:
+        "#2563EB",
+
+      bg:
+        "#DBEAFE",
+
+      route:
+        "/admin/vehicles/add",
+    },
+
+    {
+
+      label:
+        "Rentals",
+
+      icon:
+        "clipboard",
+
+      color:
+        "#7C3AED",
+
+      bg:
+        "#EDE9FE",
+
+      route:
+        "/admin/(tabs)/rentals",
+    },
+
+    {
+
+      label:
+        "Users",
+
+      icon:
+        "people",
+
+      color:
+        "#059669",
+
+      bg:
+        "#D1FAE5",
+
+      route:
+        "/admin/(tabs)/users",
+    },
+
+    {
+
+      label:
+        "Payments",
+
+      icon:
+        "card",
+
+      color:
+        "#D97706",
+
+      bg:
+        "#FEF3C7",
+
+      route:
+        "/admin/payments",
+    },
+  ];
 
   return (
 
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
 
-      <Text style={styles.title}>
-        Vehicles
-      </Text>
+      <View style={styles.topBar}>
 
-      <Text style={styles.subtitle}>
-        {vehicles.length} total in fleet
-      </Text>
+        <View style={styles.userSection}>
 
-      <View style={styles.searchContainer}>
+          <View style={styles.avatar}>
 
-        <Ionicons
-          name="search"
-          size={20}
-          color="#94A3B8"
-        />
+            <Text style={styles.avatarText}>
 
-        <TextInput
-          placeholder="Search vehicles..."
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-        />
+              {user?.fullname
+                ?.charAt(0)
+                ?.toUpperCase() || "A"}
+
+            </Text>
+
+          </View>
+
+          <View>
+
+            <Text style={styles.greeting}>
+              Good morning,
+            </Text>
+
+            <Text style={styles.username}>
+              {user?.fullname}
+            </Text>
+
+          </View>
+
+        </View>
+
+        <View style={styles.rightActions}>
+
+          <TouchableOpacity
+            style={styles.notificationButton}
+          >
+
+            <Ionicons
+              name="notifications"
+              size={18}
+              color="#0F172A"
+            />
+
+            <View style={styles.notificationDot} />
+
+          </TouchableOpacity>
+
+          <TouchableOpacity
+
+            style={styles.profileButton}
+
+            onPress={() =>
+              router.push(
+                "/admin/(tabs)/profile" as any
+              )
+            }
+          >
+
+            <Text style={styles.profileText}>
+
+              {user?.fullname
+                ?.charAt(0)
+                ?.toUpperCase() || "A"}
+
+            </Text>
+
+          </TouchableOpacity>
+
+        </View>
 
       </View>
 
-      <ScrollView
-        horizontal
-        keyboardShouldPersistTaps="handled"
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingRight: 20,
-        }}
-        style={styles.filters}
-      >
+      <View style={styles.revenueCard}>
 
+        <Text style={styles.revenueLabel}>
+          Revenue this month
+        </Text>
 
-        {filters.map((filter) => {
+        <Text style={styles.revenueValue}>
 
-          const active =
-            activeFilter === filter;
+          Rp {stats.revenue
+            .toLocaleString(
+              "id-ID"
+            )}
 
-          return (
+        </Text>
 
-            <TouchableOpacity
-              key={filter}
+        <View style={styles.revenueRow}>
 
+          <View style={styles.revenueBadge}>
+
+            <Text style={styles.revenueBadgeText}>
+              +12.4%
+            </Text>
+
+          </View>
+
+          <Text style={styles.revenueSub}>
+            vs last month
+          </Text>
+
+        </View>
+
+      </View>
+
+      <View style={styles.statsGrid}>
+
+        {dashboardStats.map(
+          (item) => (
+
+          <View
+            key={item.label}
+            style={styles.statsCard}
+          >
+
+            <View
               style={[
 
-                styles.filterButton,
+                styles.statsIcon,
 
-                active &&
-                styles.activeFilter,
+                {
+                  backgroundColor:
+                    item.bg,
+                },
               ]}
-
-              onPress={() =>
-                setActiveFilter(
-                  filter
-                )
-              }
             >
 
-              <Text
-                style={[
+              <Ionicons
+                name={item.icon as any}
+                size={18}
+                color={item.color}
+              />
 
-                  styles.filterText,
+            </View>
 
-                  active &&
-                  styles.activeFilterText,
-                ]}
-              >
+            <Text style={styles.statsValue}>
+              {item.value}
+            </Text>
 
-                {filter}
+            <Text style={styles.statsLabel}>
+              {item.label}
+            </Text>
 
-              </Text>
+          </View>
+        ))}
 
-            </TouchableOpacity>
-          );
-        })}
+      </View>
 
-      </ScrollView>
+      <Text style={styles.sectionTitle}>
+        Quick actions
+      </Text>
+
+      <View style={styles.quickGrid}>
+
+        {quickActions.map(
+          (item) => (
+
+          <TouchableOpacity
+            key={item.label}
+
+            style={styles.quickItem}
+
+            onPress={() =>
+              router.push(
+                item.route as any
+              )
+            }
+          >
+
+            <View
+              style={[
+
+                styles.quickIcon,
+
+                {
+                  backgroundColor:
+                    item.bg,
+                },
+              ]}
+            >
+
+              <Ionicons
+                name={item.icon as any}
+                size={22}
+                color={item.color}
+              />
+
+            </View>
+
+            <Text style={styles.quickLabel}>
+              {item.label}
+            </Text>
+
+          </TouchableOpacity>
+        ))}
+
+      </View>
+
+      <View style={styles.activityHeader}>
+
+        <Text style={styles.sectionTitle}>
+          Recent activity
+        </Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            router.push(
+              "/admin/(tabs)/rentals"  as any
+            )
+          }
+        >
+
+          <Text style={styles.viewAll}>
+            View all
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
 
       <FlatList
-        data={filteredVehicles}
-        nestedScrollEnabled
+        data={recentRentals}
 
+        scrollEnabled={false}
 
         keyExtractor={(item) =>
           item.id.toString()
         }
 
-        showsVerticalScrollIndicator={false}
-
-        contentContainerStyle={{
-          paddingBottom: 120,
-        }}
-
         renderItem={({ item }) => (
 
-          <View style={styles.card}>
+          <View style={styles.activityCard}>
 
-            <Image
-              source={{
-                uri:
-                  item.image ||
-                  "https://placehold.co/400",
-              }}
+            <View>
 
-              style={styles.image}
-            />
+              <Text style={styles.activityUser}>
+                {item.user.fullname}
+              </Text>
 
-            <View style={styles.cardContent}>
+              <Text style={styles.activityMeta}>
 
-              <View style={styles.topRow}>
+                {item.vehicle.name}
+                {" · "}
 
-                <View>
+                {new Date(
+                  item.startDate
+                ).toLocaleDateString(
+                  "id-ID"
+                )}
 
-                  <Text style={styles.brand}>
-                    {item.brand}
-                  </Text>
+              </Text>
 
-                  <Text style={styles.name}>
-                    {item.name}
-                  </Text>
+            </View>
 
-                </View>
+            <View style={styles.activityRight}>
 
-                <View
+              <View
+                style={[
+
+                  styles.statusBadge,
+
+                  {
+
+                    backgroundColor:
+
+                      item.status ===
+                      "completed"
+
+                        ? "#DCFCE7"
+
+                        : "#DBEAFE",
+                  },
+                ]}
+              >
+
+                <Text
                   style={[
 
-                    styles.statusBadge,
+                    styles.statusText,
 
                     {
-                      backgroundColor:
-                        renderStatusColor(
-                          item.status
-                        ),
+
+                      color:
+
+                        item.status ===
+                        "completed"
+
+                          ? "#16A34A"
+
+                          : "#2563EB",
                     },
                   ]}
                 >
 
-                  <Text style={styles.statusText}>
-                    {item.status}
-                  </Text>
+                  {item.status}
 
-                </View>
-
-              </View>
-
-              <View style={styles.bottomRow}>
-
-                <Text style={styles.price}>
-                  Rp {item.price}
                 </Text>
 
-                <View style={styles.actions}>
-
-                  <TouchableOpacity
-                    style={styles.editButton}
-
-                    onPress={() =>
-                      router.push({
-                        pathname:
-                          "/admin/vehicles/edit/[id]",
-
-                        params: {
-                          id: item.id,
-                        },
-                      })
-                    }
-                  >
-
-                    <Ionicons
-                      name="pencil"
-                      size={16}
-                      color="#2563EB"
-                    />
-
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-
-                    onPress={() =>
-                      handleDelete(item.id)
-                    }
-                  >
-
-                    <Ionicons
-                      name="trash"
-                      size={16}
-                      color="#DC2626"
-                    />
-
-                  </TouchableOpacity>
-
-                </View>
-
               </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color="#CBD5E1"
+              />
 
             </View>
 
@@ -368,25 +620,11 @@ VehiclesScreen() {
         )}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
+      <View style={{
+        height: 40
+      }} />
 
-        onPress={() =>
-          router.push(
-            "/admin/vehicles/add"
-          )
-        }
-      >
-
-        <Ionicons
-          name="add"
-          size={28}
-          color="#fff"
-        />
-
-      </TouchableOpacity>
-
-    </View>
+    </ScrollView>
   );
 }
 
@@ -396,127 +634,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
     paddingTop: 60,
+  },
+
+  topBar: {
+
     paddingHorizontal: 20,
-  },
-
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-
-  subtitle: {
-    color: "#64748B",
-    marginTop: 6,
-    marginBottom: 24,
-  },
-
-  searchContainer: {
-
-    flexDirection: "row",
-    alignItems: "center",
-
-    backgroundColor: "#fff",
-
-    borderRadius: 18,
-
-    paddingHorizontal: 16,
-
-    height: 54,
-
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 15,
-  },
-
-  filters: {
-    marginTop: 20,
-    marginBottom: 20,
-    maxHeight: 50,
-  },
-
-
-  filterButton: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-
-  activeFilter: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
-  },
-
-  filterText: {
-    color: "#64748B",
-    fontWeight: "500",
-  },
-
-  activeFilterText: {
-    color: "#fff",
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    marginBottom: 18,
-    overflow: "hidden",
-    zIndex: 1,
-  },
-
-  image: {
-    width: "100%",
-    height: 180,
-  },
-
-  cardContent: {
-    padding: 16,
-  },
-
-  topRow: {
-
-    flexDirection: "row",
-
-    justifyContent:
-      "space-between",
-  },
-
-  brand: {
-    fontSize: 12,
-    color: "#64748B",
-    textTransform: "uppercase",
-  },
-
-  name: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginTop: 4,
-  },
-
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    alignSelf: "flex-start",
-  },
-
-  statusText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  bottomRow: {
 
     flexDirection: "row",
 
@@ -524,50 +646,88 @@ const styles = StyleSheet.create({
       "space-between",
 
     alignItems: "center",
-
-    marginTop: 18,
   },
 
-  price: {
-    color: "#2563EB",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  actions: {
+  userSection: {
     flexDirection: "row",
+    alignItems: "center",
   },
 
-  editButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  avatar: {
+
+    width: 46,
+    height: 46,
+
+    borderRadius: 999,
+
     backgroundColor: "#DBEAFE",
 
     justifyContent: "center",
     alignItems: "center",
 
-    marginRight: 10,
+    marginRight: 14,
   },
 
-  deleteButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#FEE2E2",
+  avatarText: {
+    color: "#2563EB",
+    fontSize: 18,
+    fontWeight: "700",
+  },
 
-    justifyContent: "center",
+  greeting: {
+    fontSize: 13,
+    color: "#64748B",
+  },
+
+  username: {
+    marginTop: 2,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+
+  rightActions: {
+    flexDirection: "row",
     alignItems: "center",
   },
 
-  fab: {
+  notificationButton: {
+
+    width: 42,
+    height: 42,
+
+    borderRadius: 999,
+
+    backgroundColor: "#fff",
+
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginRight: 10,
+  },
+
+  notificationDot: {
+
     position: "absolute",
 
-    right: 24,
-    bottom: 28,
+    top: 10,
+    right: 10,
 
-    width: 64,
-    height: 64,
+    width: 8,
+    height: 8,
+
+    borderRadius: 999,
+
+    backgroundColor: "#2563EB",
+  },
+
+  profileButton: {
+
+    width: 42,
+    height: 42,
 
     borderRadius: 999,
 
@@ -575,8 +735,238 @@ const styles = StyleSheet.create({
 
     justifyContent: "center",
     alignItems: "center",
+  },
 
-    elevation: 8,
+  profileText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  revenueCard: {
+
+    marginTop: 26,
+    marginHorizontal: 20,
+
+    borderRadius: 30,
+
+    padding: 24,
+
+    backgroundColor: "#2563EB",
+  },
+
+  revenueLabel: {
+    color: "#DBEAFE",
+    fontSize: 13,
+  },
+
+  revenueValue: {
+    marginTop: 8,
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#fff",
+  },
+
+  revenueRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  revenueBadge: {
+
+    backgroundColor:
+      "rgba(255,255,255,0.2)",
+
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+
+    borderRadius: 999,
+  },
+
+  revenueBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  revenueSub: {
+    marginLeft: 10,
+    color: "#DBEAFE",
+    fontSize: 12,
+  },
+
+  statsGrid: {
+
+    marginTop: 22,
+
+    paddingHorizontal: 20,
+
+    flexDirection: "row",
+    flexWrap: "wrap",
+
+    justifyContent:
+      "space-between",
+  },
+
+  statsCard: {
+
+    width: "48%",
+
+    backgroundColor: "#fff",
+
+    borderRadius: 24,
+
+    padding: 18,
+
+    marginBottom: 14,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+
+  statsIcon: {
+
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  statsValue: {
+    marginTop: 16,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+
+  statsLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#64748B",
+  },
+
+  sectionTitle: {
+
+    marginTop: 28,
+    marginBottom: 16,
+
+    paddingHorizontal: 20,
+
+    fontSize: 16,
+    fontWeight: "700",
+
+    color: "#0F172A",
+  },
+
+  quickGrid: {
+
+    paddingHorizontal: 20,
+
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+  },
+
+  quickItem: {
+    alignItems: "center",
+  },
+
+  quickIcon: {
+
+    width: 58,
+    height: 58,
+
+    borderRadius: 22,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  quickLabel: {
+    marginTop: 10,
+    fontSize: 11,
+    color: "#64748B",
+    textAlign: "center",
+  },
+
+  activityHeader: {
+
+    marginTop: 28,
+
+    paddingHorizontal: 20,
+
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+
+    alignItems: "center",
+  },
+
+  viewAll: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+
+  activityCard: {
+
+    marginHorizontal: 20,
+
+    backgroundColor: "#fff",
+
+    borderRadius: 24,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+
+    padding: 18,
+
+    marginBottom: 12,
+
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+
+    alignItems: "center",
+  },
+
+  activityUser: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+
+  activityMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#64748B",
+  },
+
+  activityRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  statusBadge: {
+
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+
+    borderRadius: 999,
+
+    marginRight: 8,
+  },
+
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
 
 });
